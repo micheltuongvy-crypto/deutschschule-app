@@ -4,6 +4,7 @@ import { useState, useMemo, useCallback } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
 import AppShell from "@/components/AppShell";
+import SpeakButton from "@/components/SpeakButton";
 import { useT } from "@/context/LangContext";
 import { levels } from "@/data/levels";
 import type { VocabWord } from "@/data/vocabulary/a1_ch1_3";
@@ -426,6 +427,9 @@ export default function VokabelnLevelPage() {
                         ) : null}
                         {currentCard.word}
                       </h2>
+                      <span onClick={(e) => e.stopPropagation()} className="mt-4">
+                        <SpeakButton text={currentCard.article ? `${currentCard.article} ${currentCard.word}` : currentCard.word} />
+                      </span>
                       {currentCard.plural && (
                         <p className="text-lg text-gray-400">
                           Pl. {currentCard.plural}
@@ -546,18 +550,23 @@ export default function VokabelnLevelPage() {
                     <div className="p-4">
                       {/* Word + article */}
                       <div className="flex items-start justify-between gap-2 mb-2">
-                        <h3 className="text-lg font-bold text-gray-900 leading-tight">
-                          {word.article ? (
-                            <span
-                              className={`${
-                                articleColor[word.article] ?? "text-gray-400"
-                              } font-semibold mr-1`}
-                            >
-                              {word.article}
-                            </span>
-                          ) : null}
-                          {word.word}
-                        </h3>
+                        <div className="flex items-center gap-1">
+                          <h3 className="text-lg font-bold text-gray-900 leading-tight">
+                            {word.article ? (
+                              <span
+                                className={`${
+                                  articleColor[word.article] ?? "text-gray-400"
+                                } font-semibold mr-1`}
+                              >
+                                {word.article}
+                              </span>
+                            ) : null}
+                            {word.word}
+                          </h3>
+                          <span onClick={(e) => e.stopPropagation()}>
+                            <SpeakButton text={word.article ? `${word.article} ${word.word}` : word.word} />
+                          </span>
+                        </div>
 
                         {/* Word type badge */}
                         <span className="shrink-0 inline-flex items-center px-2 py-0.5 rounded-md bg-gray-100 text-[11px] font-medium text-gray-500 uppercase tracking-wide">

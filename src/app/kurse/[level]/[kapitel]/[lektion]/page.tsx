@@ -3,6 +3,7 @@
 import { useParams } from "next/navigation";
 import Link from "next/link";
 import AppShell from "@/components/AppShell";
+import SpeakButton from "@/components/SpeakButton";
 import { useT, useLang } from "@/context/LangContext";
 import { levels } from "@/data/levels";
 import { allLessons } from "@/data/allLessons";
@@ -78,9 +79,12 @@ function DialogueBlock({
                 >
                   {line.speaker}
                 </p>
-                <p className="text-gray-900 font-medium leading-relaxed">
-                  {line.de}
-                </p>
+                <div className="flex items-center gap-1">
+                  <p className="text-gray-900 font-medium leading-relaxed">
+                    {line.de}
+                  </p>
+                  <SpeakButton text={line.de} />
+                </div>
                 <p className="text-gray-500 text-sm mt-1 italic">{line.vi}</p>
               </div>
             </div>
@@ -198,7 +202,10 @@ function VocabularyBlock({
                   {word.article}
                 </span>
               )}
-              <span className="text-gray-900 font-semibold">{word.de}</span>
+              <div className="flex items-center gap-1">
+                <span className="text-gray-900 font-semibold">{word.de}</span>
+                <SpeakButton text={word.article ? `${word.article} ${word.de}` : word.de} />
+              </div>
               <span className="text-gray-500 text-sm mt-1">{word.vi}</span>
             </div>
           ))}
