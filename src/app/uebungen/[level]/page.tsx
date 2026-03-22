@@ -4,6 +4,7 @@ import { useParams, useRouter } from "next/navigation";
 import { useState, useMemo, useCallback, useEffect } from "react";
 import AppShell from "@/components/AppShell";
 import { useT } from "@/context/LangContext";
+import { useProgress } from "@/context/ProgressContext";
 
 import { a1ExercisesCh1_5 } from "@/data/exercises/a1/exercises_ch1_5";
 import { a1ExercisesCh6_10 } from "@/data/exercises/a1/exercises_ch6_10";
@@ -560,6 +561,8 @@ export default function UebungenPage() {
   const [completed, setCompleted] = useState(false);
   const [animClass, setAnimClass] = useState("");
 
+  const { saveExerciseScore, getBestScore, hydrated } = useProgress();
+
   const allExercises = exercisesByLevel[levelId] ?? [];
   const chapters = useMemo(() => {
     const ids = [...new Set(allExercises.map((e) => e.chapterId))].sort((a, b) => a - b);
@@ -633,6 +636,13 @@ export default function UebungenPage() {
     setCompleted(false);
     setAnimClass("");
   }, [levelId]);
+
+  useEffect(() => {
+    if (completed && exercises.length > 0) {
+      const key = `${levelId}-ch${selectedChapter ?? "all"}`;
+      saveExerciseScore(key, Math.round((score / exercises.length) * 100));
+    }
+  }, [completed]);
 
   if (!LEVELS.includes(levelId)) {
     return (
@@ -812,6 +822,18 @@ export default function UebungenPage() {
                   <div className="absolute -top-4 -right-4 text-3xl animate-confetti">&#9733;</div>
                 )}
               </div>
+              {hydrated && (() => {
+                const key = `${levelId}-ch${selectedChapter ?? "all"}`;
+                const best = getBestScore(key);
+                if (best !== null && best !== Math.round((score / exercises.length) * 100)) {
+                  return (
+                    <p className="text-sm text-gray-500 mt-1">
+                      {t("Kỷ lục cá nhân:", "Persönlicher Rekord:")} <span className="font-semibold text-blue-600">{best}%</span>
+                    </p>
+                  );
+                }
+                return null;
+              })()}
               <h2 className="text-2xl font-bold text-gray-900 mb-2">
                 {score / exercises.length >= 0.8
                   ? t("Tuyet voi!", "Ausgezeichnet!")

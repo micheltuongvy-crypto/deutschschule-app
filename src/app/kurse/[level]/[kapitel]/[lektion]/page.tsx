@@ -5,6 +5,7 @@ import Link from "next/link";
 import AppShell from "@/components/AppShell";
 import SpeakButton from "@/components/SpeakButton";
 import { useT, useLang } from "@/context/LangContext";
+import { useProgress } from "@/context/ProgressContext";
 import { levels } from "@/data/levels";
 import { allLessons } from "@/data/allLessons";
 import type { ContentBlock } from "@/data/lessons/a1/chapters1_3";
@@ -344,6 +345,9 @@ export default function LektionPage() {
     );
   }
 
+  const { completeLesson, isLessonComplete, hydrated } = useProgress();
+  const lessonDone = hydrated && isLessonComplete(lesson?.id ?? "");
+
   const badge = lessonTypeBadge[lesson.type] ?? {
     bg: "bg-gray-100",
     text: "text-gray-800",
@@ -444,6 +448,25 @@ export default function LektionPage() {
           {lesson.content.map((block, i) => (
             <ContentBlockRenderer key={i} block={block} />
           ))}
+        </div>
+      </section>
+
+      {/* Mark complete */}
+      <section className="bg-gray-50 pb-2">
+        <div className="max-w-4xl mx-auto px-6">
+          <button
+            onClick={() => lesson && completeLesson(lesson.id)}
+            disabled={lessonDone}
+            className={`w-full py-4 rounded-2xl font-bold text-lg transition-all ${
+              lessonDone
+                ? "bg-emerald-100 text-emerald-700 cursor-default"
+                : "bg-blue-600 text-white hover:bg-blue-700 active:scale-[0.98] shadow-md"
+            }`}
+          >
+            {lessonDone
+              ? t("✓ Bài học đã hoàn thành", "✓ Lektion abgeschlossen")
+              : t("Đánh dấu hoàn thành", "Als abgeschlossen markieren")}
+          </button>
         </div>
       </section>
 

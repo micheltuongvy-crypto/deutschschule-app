@@ -10,6 +10,7 @@ export default function Navbar() {
   const [mobileOpen, setMobileOpen] = useState(false);
 
   const navLinks = [
+    { href: "/dashboard", label: t("Tổng quan", "Dashboard") },
     { href: "/kurse", label: t("Khóa học", "Kurse") },
     { href: "/vokabeln/a1", label: t("Từ vựng", "Vokabeln") },
     { href: "/grammatik/a1", label: t("Ngữ pháp", "Grammatik") },

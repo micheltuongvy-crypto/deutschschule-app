@@ -4,6 +4,7 @@ import { useParams } from "next/navigation";
 import Link from "next/link";
 import AppShell from "@/components/AppShell";
 import { useT } from "@/context/LangContext";
+import { useProgress } from "@/context/ProgressContext";
 import { levels } from "@/data/levels";
 import type { Lesson } from "@/data/lessons/a1/chapters1_3";
 
@@ -133,6 +134,8 @@ export default function KapitelPage() {
     );
   }
 
+  const { isLessonComplete, hydrated } = useProgress();
+
   const chapterName = level.chapters[kapitelNum - 1];
   const allLessons = getAllLessons();
   const levelLessons = allLessons[levelId] || [];
@@ -169,6 +172,11 @@ export default function KapitelPage() {
           <p className="mt-3 text-xl md:text-2xl text-white/90 font-medium">
             {chapterName}
           </p>
+          {hydrated && (
+            <p className="mt-1 text-sm text-white/70">
+              {chapterLessons.filter(l => isLessonComplete(l.id)).length} / {chapterLessons.length} {t("hoàn thành", "abgeschlossen")}
+            </p>
+          )}
           <div className="mt-4 flex items-center gap-4 text-sm text-white/80">
             <span className="inline-flex items-center gap-1.5 bg-white/20 backdrop-blur rounded-full px-3 py-1">
               <svg
@@ -235,9 +243,16 @@ export default function KapitelPage() {
                       <div className="flex items-start gap-5">
                         {/* Lesson number circle */}
                         <div
-                          className={`shrink-0 w-12 h-12 rounded-full bg-gradient-to-br ${level.color} flex items-center justify-center text-white font-bold text-lg shadow-md group-hover:scale-110 transition-transform`}
+                          className={`relative shrink-0 w-12 h-12 rounded-full bg-gradient-to-br ${level.color} flex items-center justify-center text-white font-bold text-lg shadow-md group-hover:scale-110 transition-transform`}
                         >
                           {lesson.lessonNumber}
+                          {hydrated && isLessonComplete(lesson.id) && (
+                            <div className="absolute -top-1 -right-1 w-5 h-5 bg-emerald-500 rounded-full flex items-center justify-center shadow-sm">
+                              <svg className="w-3 h-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
+                                <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                              </svg>
+                            </div>
+                          )}
                         </div>
 
                         {/* Content */}

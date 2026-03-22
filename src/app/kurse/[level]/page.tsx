@@ -4,12 +4,16 @@ import { useParams } from "next/navigation";
 import Link from "next/link";
 import AppShell from "@/components/AppShell";
 import { useT } from "@/context/LangContext";
+import { useProgress } from "@/context/ProgressContext";
 import { levels } from "@/data/levels";
+import { allLessons } from "@/data/allLessons";
 
 export default function LevelPage() {
   const params = useParams();
   const t = useT();
   const levelId = params.level as string;
+
+  const { isLessonComplete, hydrated } = useProgress();
 
   const level = levels.find((l) => l.id === levelId);
 
@@ -111,7 +115,13 @@ export default function LevelPage() {
 
                     {/* Badge */}
                     <span className="shrink-0 text-xs font-medium bg-blue-50 text-blue-700 px-3 py-1 rounded-full">
-                      4 {t("bài học", "Lektionen")}
+                      {hydrated ? (
+                        <>
+                          {allLessons.filter(l => l.level === levelId && l.chapterId === num && isLessonComplete(l.id)).length}/4 {t("hoàn thành", "abgeschlossen")}
+                        </>
+                      ) : (
+                        <>4 {t("bài học", "Lektionen")}</>
+                      )}
                     </span>
 
                     {/* Arrow */}

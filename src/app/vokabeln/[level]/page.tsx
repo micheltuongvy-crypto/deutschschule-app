@@ -6,6 +6,7 @@ import Link from "next/link";
 import AppShell from "@/components/AppShell";
 import SpeakButton from "@/components/SpeakButton";
 import { useT } from "@/context/LangContext";
+import { useProgress } from "@/context/ProgressContext";
 import { levels } from "@/data/levels";
 import type { VocabWord } from "@/data/vocabulary/a1_ch1_3";
 
@@ -105,6 +106,8 @@ export default function VokabelnLevelPage() {
   const [masteredCount, setMasteredCount] = useState(0);
   const [deckInitialized, setDeckInitialized] = useState(false);
 
+  const { markWordKnown, isWordKnown, hydrated } = useProgress();
+
   const allWords = useMemo(() => vocabByLevel[levelId] ?? [], [levelId]);
 
   const chapters = useMemo(() => {
@@ -149,6 +152,8 @@ export default function VokabelnLevelPage() {
 
   // Mark word as known - remove from deck
   const handleKnown = useCallback(() => {
+    const card = flashcardDeck[flashcardIndex];
+    if (card) markWordKnown(card.id);
     setMasteredCount((prev) => prev + 1);
     setIsFlipped(false);
     const newDeck = flashcardDeck.filter((_, i) => i !== flashcardIndex);
@@ -548,6 +553,9 @@ export default function VokabelnLevelPage() {
                     }`}
                   >
                     <div className="p-4">
+                      {hydrated && isWordKnown(word.id) && (
+                        <div className="absolute top-2 right-2 w-3 h-3 bg-emerald-400 rounded-full" title={t("Đã thuộc", "Gemeistert")} />
+                      )}
                       {/* Word + article */}
                       <div className="flex items-start justify-between gap-2 mb-2">
                         <div className="flex items-center gap-1">
