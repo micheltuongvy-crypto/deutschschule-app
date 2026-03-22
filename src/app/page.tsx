@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, createContext, useContext } from "react";
+import Link from "next/link";
 
 /* ─── TRANSLATIONS ─── */
 type Lang = "vi" | "de";
@@ -31,7 +32,7 @@ function XIcon() {
 /* ─── LANGUAGE SWITCHER ─── */
 function LangSwitcher({ lang, setLang }: { lang: Lang; setLang: (l: Lang) => void }) {
   return (
-    <div className="fixed top-4 right-4 z-50 flex bg-white/90 backdrop-blur rounded-full shadow-lg border border-gray-200 p-1">
+    <div className="flex bg-white/90 backdrop-blur rounded-full shadow-sm border border-gray-200 p-1">
       <button
         onClick={() => setLang("vi")}
         className={`px-3 py-1.5 rounded-full text-sm font-medium transition-colors ${
@@ -72,12 +73,12 @@ function Hero() {
           <br />
           {t("Luyện thi Goethe, ÖSD, TestDaF.", "Prüfungsvorbereitung Goethe, ÖSD, TestDaF.")}
         </p>
-        <a
-          href="#dangky"
+        <Link
+          href="/kurse"
           className="mt-8 inline-block bg-yellow-400 hover:bg-yellow-300 text-blue-900 font-bold text-lg px-10 py-4 rounded-full transition-colors"
         >
-          {t("Học thử miễn phí", "Kostenlos ausprobieren")}
-        </a>
+          {t("Bắt đầu học ngay", "Jetzt starten")}
+        </Link>
         <div className="mt-8 flex flex-col sm:flex-row items-center justify-center gap-4 text-sm text-blue-100">
           <span className="flex items-center gap-2">
             <CheckIcon /> {t("Không cần biết trước tiếng Đức", "Keine Vorkenntnisse nötig")}
@@ -337,18 +338,21 @@ function CourseOverview() {
           {t("Lộ trình học từ A1 đến C2", "Lernpfad von A1 bis C2")}
         </h2>
         <div className="mt-12 grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
-          {levels.map((l, i) => (
-            <div key={l.level} className="relative">
-              <div className={`${l.color} border-2 rounded-2xl p-4 text-center`}>
-                <div className="text-2xl font-extrabold text-gray-900">{l.level}</div>
-                <div className="mt-2 text-sm text-gray-600">{l.duration}</div>
-                <div className="mt-1 text-xs font-medium text-blue-700">{l.exam}</div>
+          {levels.map((l, i) => {
+            const href = l.level === "Pre-A1" ? "/kurse/a1" : l.level === "C1/C2" ? "/kurse/c1" : `/kurse/${l.level.toLowerCase()}`;
+            return (
+              <div key={l.level} className="relative">
+                <Link href={href} className={`${l.color} border-2 rounded-2xl p-4 text-center block hover:shadow-lg hover:-translate-y-1 transition-all`}>
+                  <div className="text-2xl font-extrabold text-gray-900">{l.level}</div>
+                  <div className="mt-2 text-sm text-gray-600">{l.duration}</div>
+                  <div className="mt-1 text-xs font-medium text-blue-700">{l.exam}</div>
+                </Link>
+                {i < 5 && (
+                  <div className="hidden lg:flex absolute top-1/2 -right-3 -translate-y-1/2 text-xl text-gray-400">→</div>
+                )}
               </div>
-              {i < 5 && (
-                <div className="hidden lg:flex absolute top-1/2 -right-3 -translate-y-1/2 text-xl text-gray-400">→</div>
-              )}
-            </div>
-          ))}
+            );
+          })}
         </div>
       </div>
     </section>
@@ -508,9 +512,9 @@ function FinalCTA() {
           <br />
           {t("Bây giờ là lượt bạn.", "Jetzt bist du dran.")}
         </p>
-        <a href="#dangky" className="mt-8 inline-block bg-yellow-400 hover:bg-yellow-300 text-blue-900 font-bold text-lg px-10 py-4 rounded-full transition-colors">
+        <Link href="/kurse" className="mt-8 inline-block bg-yellow-400 hover:bg-yellow-300 text-blue-900 font-bold text-lg px-10 py-4 rounded-full transition-colors">
           {t("Bắt đầu học miễn phí", "Kostenlos starten")}
-        </a>
+        </Link>
         <p className="mt-4 text-sm text-blue-300">
           {t("Không cần thẻ tín dụng. Hủy bất cứ lúc nào.", "Keine Kreditkarte nötig. Jederzeit kündbar.")}
         </p>
@@ -550,12 +554,41 @@ function Footer() {
   );
 }
 
+/* ─── LANDING NAV ─── */
+function LandingNav({ lang, setLang }: { lang: Lang; setLang: (l: Lang) => void }) {
+  return (
+    <nav className="sticky top-0 z-50 bg-white/95 backdrop-blur border-b border-gray-200">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 flex items-center justify-between h-16">
+        <span className="flex items-center gap-2 font-bold text-xl text-blue-800">
+          <span className="text-2xl">🇩🇪</span>
+          <span className="hidden sm:inline">Deutschschule</span>
+        </span>
+        <div className="flex items-center gap-1 sm:gap-4 text-sm font-medium">
+          <Link href="/kurse" className="px-3 py-2 rounded-lg hover:bg-gray-100 text-gray-700">
+            {lang === "vi" ? "Khóa học" : "Kurse"}
+          </Link>
+          <Link href="/vokabeln/a1" className="px-3 py-2 rounded-lg hover:bg-gray-100 text-gray-700 hidden sm:block">
+            {lang === "vi" ? "Từ vựng" : "Vokabeln"}
+          </Link>
+          <Link href="/grammatik/a1" className="px-3 py-2 rounded-lg hover:bg-gray-100 text-gray-700 hidden sm:block">
+            {lang === "vi" ? "Ngữ pháp" : "Grammatik"}
+          </Link>
+          <Link href="/uebungen/a1" className="px-3 py-2 rounded-lg hover:bg-gray-100 text-gray-700 hidden sm:block">
+            {lang === "vi" ? "Bài tập" : "Übungen"}
+          </Link>
+          <LangSwitcher lang={lang} setLang={setLang} />
+        </div>
+      </div>
+    </nav>
+  );
+}
+
 /* ─── MAIN PAGE ─── */
 export default function Home() {
   const [lang, setLang] = useState<Lang>("vi");
   return (
     <LangContext.Provider value={lang}>
-      <LangSwitcher lang={lang} setLang={setLang} />
+      <LandingNav lang={lang} setLang={setLang} />
       <Hero />
       <Problem />
       <Solution />

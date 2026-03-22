@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useCallback } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
 import AppShell from "@/components/AppShell";
@@ -96,6 +96,14 @@ export default function VokabelnLevelPage() {
   const [chapterFilter, setChapterFilter] = useState<number | "all">("all");
   const [expandedId, setExpandedId] = useState<string | null>(null);
 
+  // Flashcard mode state
+  const [flashcardMode, setFlashcardMode] = useState(false);
+  const [flashcardDeck, setFlashcardDeck] = useState<VocabWord[]>([]);
+  const [flashcardIndex, setFlashcardIndex] = useState(0);
+  const [isFlipped, setIsFlipped] = useState(false);
+  const [masteredCount, setMasteredCount] = useState(0);
+  const [deckInitialized, setDeckInitialized] = useState(false);
+
   const allWords = useMemo(() => vocabByLevel[levelId] ?? [], [levelId]);
 
   const chapters = useMemo(() => {
@@ -116,6 +124,61 @@ export default function VokabelnLevelPage() {
       return true;
     });
   }, [allWords, search, chapterFilter]);
+
+  // Shuffle helper
+  const shuffleArray = useCallback((arr: VocabWord[]) => {
+    const shuffled = [...arr];
+    for (let i = shuffled.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+    }
+    return shuffled;
+  }, []);
+
+  // Start flashcard mode
+  const startFlashcards = useCallback(() => {
+    const deck = shuffleArray(filtered);
+    setFlashcardDeck(deck);
+    setFlashcardIndex(0);
+    setIsFlipped(false);
+    setMasteredCount(0);
+    setDeckInitialized(true);
+    setFlashcardMode(true);
+  }, [filtered, shuffleArray]);
+
+  // Mark word as known - remove from deck
+  const handleKnown = useCallback(() => {
+    setMasteredCount((prev) => prev + 1);
+    setIsFlipped(false);
+    const newDeck = flashcardDeck.filter((_, i) => i !== flashcardIndex);
+    setFlashcardDeck(newDeck);
+    if (newDeck.length > 0) {
+      setFlashcardIndex(flashcardIndex >= newDeck.length ? 0 : flashcardIndex);
+    }
+  }, [flashcardDeck, flashcardIndex]);
+
+  // Mark word as "still learning" - shuffle it back
+  const handleStillLearning = useCallback(() => {
+    setIsFlipped(false);
+    if (flashcardDeck.length <= 1) return; // only one card, stay
+    // Move current card to a random position later in the deck
+    const current = flashcardDeck[flashcardIndex];
+    const rest = flashcardDeck.filter((_, i) => i !== flashcardIndex);
+    const insertAt = Math.floor(Math.random() * (rest.length - 0 + 1)) + Math.min(flashcardIndex, rest.length);
+    const clamped = Math.min(insertAt, rest.length);
+    rest.splice(clamped, 0, current);
+    setFlashcardDeck(rest);
+    // Advance index, or wrap
+    setFlashcardIndex(flashcardIndex >= rest.length ? 0 : flashcardIndex);
+  }, [flashcardDeck, flashcardIndex]);
+
+  const exitFlashcards = useCallback(() => {
+    setFlashcardMode(false);
+    setDeckInitialized(false);
+  }, []);
+
+  const currentCard = flashcardDeck[flashcardIndex];
+  const totalCards = deckInitialized ? masteredCount + flashcardDeck.length : 0;
 
   if (!level) {
     return (
@@ -247,12 +310,204 @@ export default function VokabelnLevelPage() {
                   </option>
                 ))}
               </select>
+
+              {/* Flashcard mode toggle */}
+              <button
+                onClick={() =>
+                  flashcardMode ? exitFlashcards() : startFlashcards()
+                }
+                className={`inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold transition-all whitespace-nowrap ${
+                  flashcardMode
+                    ? "bg-amber-500 text-white shadow-md hover:bg-amber-600"
+                    : "bg-amber-50 text-amber-700 border border-amber-200 hover:bg-amber-100"
+                }`}
+              >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+                </svg>
+                {flashcardMode
+                  ? t("Thoat the ghi nho", "Karteikarten beenden")
+                  : t("Che do the ghi nho", "Karteikarten-Modus")}
+              </button>
             </div>
           </div>
         </div>
 
+        {/* Flashcard mode */}
+        {flashcardMode && (
+          <div className="max-w-2xl mx-auto px-4 sm:px-6 py-8">
+            {/* Progress bar */}
+            <div className="mb-6">
+              <div className="flex items-center justify-between text-sm mb-2">
+                <span className="text-gray-600 font-medium">
+                  {t("Tien trinh", "Fortschritt")}
+                </span>
+                <span className="text-gray-500">
+                  <span className="text-green-600 font-bold">{masteredCount}</span>
+                  {" "}{t("da thuoc", "gemeistert")} / {totalCards} {t("tong cong", "gesamt")}
+                  {flashcardDeck.length > 0 && (
+                    <span className="text-amber-600 ml-2">
+                      ({flashcardDeck.length} {t("con lai", "ubrig")})
+                    </span>
+                  )}
+                </span>
+              </div>
+              <div className="w-full bg-gray-200 rounded-full h-3 overflow-hidden">
+                <div
+                  className="h-full bg-gradient-to-r from-green-400 to-green-500 rounded-full transition-all duration-500 ease-out"
+                  style={{
+                    width: totalCards > 0 ? `${(masteredCount / totalCards) * 100}%` : "0%",
+                  }}
+                />
+              </div>
+            </div>
+
+            {flashcardDeck.length === 0 ? (
+              /* All cards mastered */
+              <div className="text-center py-16 bg-white rounded-3xl border border-green-200 shadow-lg">
+                <div className="text-6xl mb-4">&#127881;</div>
+                <h2 className="text-2xl font-bold text-gray-900 mb-2">
+                  {t("Tuyet voi!", "Ausgezeichnet!")}
+                </h2>
+                <p className="text-gray-600 mb-6">
+                  {t(
+                    `Ban da hoc thuoc tat ca ${masteredCount} tu vung!`,
+                    `Du hast alle ${masteredCount} Vokabeln gemeistert!`
+                  )}
+                </p>
+                <div className="flex gap-3 justify-center">
+                  <button
+                    onClick={startFlashcards}
+                    className="px-6 py-2.5 bg-amber-500 text-white rounded-xl font-semibold hover:bg-amber-600 transition-colors"
+                  >
+                    {t("Hoc lai", "Nochmal uben")}
+                  </button>
+                  <button
+                    onClick={exitFlashcards}
+                    className="px-6 py-2.5 bg-gray-100 text-gray-700 rounded-xl font-semibold hover:bg-gray-200 transition-colors"
+                  >
+                    {t("Quay lai danh sach", "Zuruck zur Liste")}
+                  </button>
+                </div>
+              </div>
+            ) : currentCard ? (
+              /* Flashcard */
+              <div>
+                {/* Card container with perspective */}
+                <div
+                  className="relative w-full cursor-pointer select-none"
+                  style={{ perspective: "1200px" }}
+                  onClick={() => setIsFlipped(!isFlipped)}
+                >
+                  <div
+                    className="relative w-full transition-transform duration-500"
+                    style={{
+                      transformStyle: "preserve-3d",
+                      transform: isFlipped ? "rotateY(180deg)" : "rotateY(0deg)",
+                    }}
+                  >
+                    {/* Front face */}
+                    <div
+                      className="w-full bg-white rounded-3xl border-2 border-gray-200 shadow-xl p-8 sm:p-12 flex flex-col items-center justify-center min-h-[320px]"
+                      style={{ backfaceVisibility: "hidden" }}
+                    >
+                      <p className="text-xs uppercase tracking-widest text-gray-400 mb-4 font-semibold">
+                        {t("Tieng Duc", "Deutsch")}
+                      </p>
+                      <h2 className="text-4xl sm:text-5xl font-extrabold text-gray-900 text-center leading-tight mb-3">
+                        {currentCard.article ? (
+                          <span
+                            className={`${
+                              articleColor[currentCard.article] ?? "text-gray-400"
+                            } mr-2`}
+                          >
+                            {currentCard.article}
+                          </span>
+                        ) : null}
+                        {currentCard.word}
+                      </h2>
+                      {currentCard.plural && (
+                        <p className="text-lg text-gray-400">
+                          Pl. {currentCard.plural}
+                        </p>
+                      )}
+                      <p className="mt-8 text-sm text-gray-400 animate-pulse">
+                        {t("Nhan de lat the", "Tippen zum Umdrehen")}
+                      </p>
+                    </div>
+
+                    {/* Back face */}
+                    <div
+                      className="w-full bg-gradient-to-br from-blue-50 to-indigo-50 rounded-3xl border-2 border-blue-200 shadow-xl p-8 sm:p-12 flex flex-col items-center justify-center min-h-[320px] absolute top-0 left-0"
+                      style={{
+                        backfaceVisibility: "hidden",
+                        transform: "rotateY(180deg)",
+                      }}
+                    >
+                      <span className="inline-flex items-center px-3 py-1 rounded-full bg-blue-100 text-blue-700 text-xs font-semibold uppercase tracking-wide mb-4">
+                        {currentCard.wordType}
+                      </span>
+                      <h2 className="text-3xl sm:text-4xl font-extrabold text-gray-900 text-center mb-4">
+                        {currentCard.translation}
+                      </h2>
+                      <div className="w-16 h-0.5 bg-blue-200 rounded-full mb-4" />
+                      <p className="text-base text-gray-700 italic text-center leading-relaxed max-w-md">
+                        &ldquo;{currentCard.example}&rdquo;
+                      </p>
+                      <p className="text-sm text-gray-500 text-center mt-2 max-w-md">
+                        {currentCard.exampleTranslation}
+                      </p>
+                      <div className="flex items-center gap-2 mt-4">
+                        <span className="text-[11px] font-semibold px-2 py-0.5 rounded bg-white/70 text-gray-500 border border-gray-200">
+                          Kap. {currentCard.chapter}
+                        </span>
+                        <span className="text-[11px] text-gray-500">
+                          {currentCard.topic}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Action buttons */}
+                <div className="flex gap-4 mt-6 justify-center">
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleStillLearning();
+                    }}
+                    className="flex-1 max-w-[200px] flex items-center justify-center gap-2 px-6 py-3.5 bg-red-50 text-red-700 border-2 border-red-200 rounded-2xl font-bold text-sm hover:bg-red-100 hover:border-red-300 transition-all active:scale-95"
+                  >
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                    </svg>
+                    {t("Con hoc", "Noch lernen")}
+                  </button>
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleKnown();
+                    }}
+                    className="flex-1 max-w-[200px] flex items-center justify-center gap-2 px-6 py-3.5 bg-green-50 text-green-700 border-2 border-green-200 rounded-2xl font-bold text-sm hover:bg-green-100 hover:border-green-300 transition-all active:scale-95"
+                  >
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                    </svg>
+                    {t("Da biet", "Kenne ich")}
+                  </button>
+                </div>
+
+                {/* Card counter */}
+                <p className="text-center text-sm text-gray-400 mt-4">
+                  {flashcardIndex + 1} / {flashcardDeck.length}
+                </p>
+              </div>
+            ) : null}
+          </div>
+        )}
+
         {/* Word grid */}
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 py-6">
+        {!flashcardMode && <div className="max-w-7xl mx-auto px-4 sm:px-6 py-6">
           {filtered.length === 0 ? (
             <div className="text-center py-16">
               <div className="text-5xl mb-4 opacity-30">?</div>
@@ -370,7 +625,7 @@ export default function VokabelnLevelPage() {
               })}
             </div>
           )}
-        </div>
+        </div>}
       </div>
     </AppShell>
   );
